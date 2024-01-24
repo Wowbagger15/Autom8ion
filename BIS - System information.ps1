@@ -47,8 +47,9 @@
     Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
     GitHub: WowBagger15/Autom8ion
     Release notes:
-        Version 1.0: First version cleaned up of comments and debug lines
-        Version 0.9: Init
+        Version 1.0.1   : Fixed position calculation bug, erroneously using double pipe instead of -bor
+        Version 1.0     : First version cleaned up of comments and debug lines
+        Version 0.9     : Init
 #>
 
 # endregion synopsis
@@ -125,7 +126,7 @@ public static extern bool DeleteObject(IntPtr hObject);
 # region begin variables
 
 $__ = @{
-    version   = '1.0'
+    version   = '1.0.1'
     dialog = @{
         margin                     = 32
         position = @{
@@ -836,7 +837,7 @@ function show-output {
         }
         $_lines                     = [System.Windows.Forms.TextBox]@{
             size                    = $_canvas.clientSize
-            anchor                  = [System.Windows.Forms.AnchorStyles]::left || [System.Windows.Forms.AnchorStyles]::top || [System.Windows.Forms.AnchorStyles]::right || [System.Windows.Forms.AnchorStyles]::bottom;
+            anchor                  = [System.Windows.Forms.AnchorStyles]::left -bor [System.Windows.Forms.AnchorStyles]::top -bor [System.Windows.Forms.AnchorStyles]::right -bor [System.Windows.Forms.AnchorStyles]::bottom;
             multiLine               = $true
             autoSize                = $true
             scrollBars              = [System.Windows.Forms.ScrollBars]::vertical
@@ -1396,5 +1397,5 @@ do {
     [void]( popUP );
 } while( $_refresh );
 [void]( show-console );
-"End   {0}. {1}" -f $me, $bye | write-host;
+"End. {0}" -f $bye | write-host;
 # endregion main
