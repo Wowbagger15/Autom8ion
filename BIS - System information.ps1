@@ -56,11 +56,13 @@
 
 # region interface
 
-[cmdLetBinding()]
+[cmdLetBinding( defaultParameterSetName = "normal" )]
 param(
+    [parameter( parameterSetName = "normal" )]
     [string]
     $me  = "BIS - System information"
     ,
+    [parameter( parameterSetName = "normal" )]
     [string]
     $bye = "Ready. This window may be closed."
     ,
@@ -70,12 +72,15 @@ param(
     $size                          = [System.Drawing.Size]::new( 512, 256 )
     ,
 #>
+    [parameter( parameterSetName = "normal" )]
     [int]
     $width                         = 512
     ,
+    [parameter( parameterSetName = "normal" )]
     [int]
     $height                        = 256
     ,
+    [parameter( parameterSetName = "normal" )]
     [validateSet(
             "leftTop"
         ,   "rightTop"
@@ -91,6 +96,13 @@ param(
     ,
     [string]                       # [System.Drawing.Color]
     $background                    = "#FFFFFF"
+    ,
+    [string]
+    $log                           = ( join-path -path ( [system.io.path]::getTempPath() ) -childPath ( ( $me, "log" ) -join '.' ) )
+    ,
+    [parameter( parameterSetName = "minimalist" )]
+    [switch]
+    $minimalist
     ,
     [switch]
     $test
@@ -287,7 +299,7 @@ function coalesce {
             switch ( $mode ) {
                 0 { if ( $value                                                                    ) { return $value }; continue;  break; }
                 1 { if ( $value -is [string] -and [string]::IsNullOrEmpty( $value ) -eq $false     ) { return $value }; continue;  break; }
-                2 { if ( $value -ne $null                                                          ) { return $value }; continue;  break; }
+                2 { if ( $null -ne $value                                                          ) { return $value }; continue;  break; }
             }
         }
         return $default;
@@ -556,6 +568,15 @@ function out-gauge {
         }
     }
 }
+function out-log {
+    process {
+        if ( $log ) {
+            $_ = $_.insert( 0, [datetime]::now.toString( "yyyyMMdd::HHmmss::" ) );
+            $_ | write-host;
+            $_ | out-file -filePath $log -encoding "ascii" -append;
+        }
+    }
+}
 function get-systemInformation {
     [CmdletBinding()]
     param(
@@ -739,9 +760,9 @@ function get-MSinfo {
 }
 function invoke-MSinfo {
     if ( $_ = get-MSinfo ) {
-        "  Opening Microsoft System Information using [{0}] ..." -f ( $_ -join '] [' ) | write-host;
+        "  Opening Microsoft System Information using [{0}] ..." -f ( $_ -join '] [' ) | out-log;
         start-process -filePath $_;
-        "  Done." | write-host;
+        "  Done." | out-log;
     }
 }
 function get-certStore {
@@ -752,9 +773,9 @@ function get-certStore {
 }
 function invoke-certificateStore {
     if ( $_ = get-certStore ) {
-        "  Opening Certificate Store using [{0}] ..." -f ( $_ -join '] [' ) | write-host;
+        "  Opening Certificate Store using [{0}] ..." -f ( $_ -join '] [' ) | out-log;
         start-process -filePath $_;
-        "  Done." | write-host;
+        "  Done." | out-log;
     }
 }
 function invoke-syncIntune {
@@ -766,26 +787,26 @@ function invoke-syncIntune {
 #   Start-Process -FilePath "C:\Windows\system32\deviceenroller.exe" -Wait -ArgumentList "/o $EnrollmentID /c /b"
 #
     try {
-        "  Synchronizing InTune ..." | write-host;
+        "  Synchronizing InTune ..." | out-log;
         $_binary = "DeviceEnroller.exe";
         if ( $_cmd = ( get-command $_binary -ea silentlyContinue ) | select-object -expand source ) {
-            '    using binary [{0}]' -f $_cmd | write-host;
+            '    using binary [{0}]' -f $_cmd | out-log;
             $_filter = "*Microsoft*Windows*EnterpriseMgmt\*";
             if ( $_tasks = get-scheduledTask |? {
                 $_.taskPath -like $_filter
             } ) {
-                '    [{0}] tasks matching [{1}] found' -f $_tasks.count, $_filter | write-host;
+                '    [{0}] tasks matching [{1}] found' -f $_tasks.count, $_filter | out-log;
                 if ( $_enrollmentID = $_tasks | select-object -expand taskPath -unique |? {
                     $_ -like "*-*-*"
                 } | split-path -leaf ) {
-                    '    using enrollment ID [{0}]' -f $_enrollmentID | write-host;
+                    '    using enrollment ID [{0}]' -f $_enrollmentID | out-log;
                     $_arguments = @(
                         "/o"
                         $_enrollmentID
                         "/c"
                         "/b"
                     );
-                    '    starting InTune synchronization using [{0}] [{1}] ...' -f $_cmd, ( $_arguments -join '] [' ) | write-host;
+                    '    starting InTune synchronization using [{0}] [{1}] ...' -f $_cmd, ( $_arguments -join '] [' ) | out-log;
                     start-process -filePath $_cmd -wait -argumentList $_arguments;
                 } else {
                     throw( "FAIL::Unable to determine enrollment ID" );
@@ -796,12 +817,12 @@ function invoke-syncIntune {
         } else {
             throw( ( "FAIL::Executable [{0}] not found" -f $_binary ) );
         }
-        "  Done." | write-host;
+        "  Done." | out-log;
         return $true;
     } catch {
         # # https://4sysops.com/archives/how-to-display-a-pop-up-message-box-with-powershell/
         # [System.Windows.MessageBox]::show( , , [System.Windows.MessageBoxButton]::Ok, [System.Windows.MessageBoxImage]::Warning );
-        $_.Exception.message | write-host;
+        $_.exception.message | out-log;
         $null = [System.Windows.Forms.MessageBox]::show( $_.exception.message, "Synchronize InTune", [System.Windows.Forms.MessageBoxButtons]::Ok, [System.Windows.Forms.MessageBoxIcon]::Warning );
     }
 }
@@ -815,9 +836,9 @@ function invoke-quickAssist {
         $_ = @(
             'shell:AppsFolder\{0}!App' -f $_.packageFamilyName
         );
-        "  Starting Quick Assist using [{0}] ..." -f ( $_ -join '] [' ) | write-host;
+        "  Starting Quick Assist using [{0}] ..." -f ( $_ -join '] [' ) | out-log;
         start-process -filePath "explorer.exe" -argumentList $_;
-        "  Done." | write-host;
+        "  Done." | out-log;
     }
 }
 function show-output {
@@ -855,7 +876,7 @@ function show-output {
 
         [void]$_canvas.showDialog();
     } catch {
-        'FAIL::Unable to show output dialog: [{0}]' -f $_.exception.message | write-host;
+        'FAIL::Unable to show output dialog: [{0}]' -f $_.exception.message | out-log;
     }
 
 }
@@ -863,14 +884,14 @@ function invoke-enrollment {
     try {
         $_cmd = "dsregcmd";
         $_ = @( "/status" );
-        "  Checking enrollment status using [{0}] [{1}] ..." -f $_cmd, ( $_ -join '] [' ) | write-host;
+        "  Checking enrollment status using [{0}] [{1}] ..." -f $_cmd, ( $_ -join '] [' ) | out-log;
         $_output = & $_cmd $_;
-        "  Done." | write-host;
+        "  Done." | out-log;
         if ( $_output ) {
             show-output -content $_output -caption "Enrollment status";
         }
     } catch {
-        "FAIL::Enrollment check did not succeed: [{0}]" -f $_.exception.message | write-host;
+        "FAIL::Enrollment check did not succeed: [{0}]" -f $_.exception.message | out-log;
     }
 }
 function copy-value {
@@ -1046,7 +1067,7 @@ function get-image {
         }
     }
 }
-function popUP {
+function show-full {
     begin {
 
         try {
@@ -1056,7 +1077,7 @@ function popUP {
                 $_inventory = get-systemInformation;
             }
         } catch {
-            'FAIL::Unable to retrieve system information: [{0}]' -f $_.exception.message | write-host;
+            'FAIL::Unable to retrieve system information: [{0}]' -f $_.exception.message | out-log;
             return;
         }
 
@@ -1084,7 +1105,7 @@ function popUP {
                 $_canvas.location       = $__.dialog.position.$position;
             }
         } catch {
-            'FAIL::Unable to create main dialog canvas: [{0}]' -f $_.exception.message | write-host;
+            'FAIL::Unable to create main dialog canvas: [{0}]' -f $_.exception.message | out-log;
             return;
         }
 
@@ -1114,7 +1135,7 @@ function popUP {
             };
             $_value.size                = [System.Drawing.Size]::new( $_canvas.clientSize.width - $_value.location.x - $_margin - $_iconSize - $_margin, $_label.height )
         } catch {
-            'FAIL::Unable to create template controls: [{0}]' -f $_.exception.message | write-host;
+            'FAIL::Unable to create template controls: [{0}]' -f $_.exception.message | out-log;
             return;
         }
 
@@ -1139,7 +1160,9 @@ function popUP {
                 padding                 = 8
                 tag                     = "System Information"
             }
-            $_model.add_click( { invoke-MSinfo } );
+            $_model.add_click( {
+                invoke-MSinfo;
+            } );
 
             $_assist                    = clone-element $_model 'location','size','sizeMode','cursor', 'borderStyle', 'padding';
             $_assist.size               = [System.Drawing.Size]::new( $_iconSize, $_iconSize )
@@ -1147,27 +1170,38 @@ function popUP {
             $_assist.left               = $_model.left + $_model.width - $_assist.width;
             $_assist.image              = [System.Drawing.Icon]::extractAssociatedIcon( ( get-image -name "assist" ) );
             $_assist.tag                = "Start Quick Assist"
-            $_assist.add_click( { invoke-quickAssist } );
+            $_assist.add_click( {
+                invoke-quickAssist;
+            } );
 
             $_certStore                 = clone-element $_assist 'location','size','sizeMode','cursor', 'borderStyle', 'padding';
             $_certStore.top             = $_assist.top + $_assist.height + $_margin;
             $_certStore.image           = [System.Drawing.Icon]::extractAssociatedIcon( ( get-image -name "certStore" ) );
             $_certStore.tag             = "Show Certificates"
-            $_certStore.add_click( { invoke-certificateStore } );
+            $_certStore.add_click( {
+                invoke-certificateStore;
+            } );
 
             $_syncIntune                = clone-element $_certStore 'location','size','sizeMode','cursor', 'borderStyle', 'padding';
             $_syncIntune.top            = $_certStore.top + $_certStore.height + $_margin;
             $_syncIntune.image          = [System.Drawing.Image]::fromStream( ( get-image -name "intune" ) );
             $_syncIntune.tag            = "Synchronize InTune"
-            $_syncIntune.add_click( { if ( invoke-syncIntune ) { $global:_refresh = $true; $_canvas.close(); } } );
+            $_syncIntune.add_click( {
+                if ( invoke-syncIntune ) {
+                    $global:_refresh = $true;
+                    $_canvas.close();
+                }
+            } );
 
             $_enrollment                = clone-element $_syncIntune 'location','size','sizeMode','cursor', 'borderStyle', 'padding';
             $_enrollment.top            = $_syncIntune.top + $_syncIntune.height + $_margin;
             $_enrollment.image          = ( get-image -name "enrollment" | get-indexedIcon ).toBitmap()
             $_enrollment.tag            = "Check enrollment status"
-            $_enrollment.add_click( { invoke-enrollment; } );
+            $_enrollment.add_click( {
+                invoke-enrollment;
+            } );
         } catch {
-            'FAIL::Unable to create tool controls: [{0}]' -f $_.exception.message | write-host;
+            'FAIL::Unable to create tool controls: [{0}]' -f $_.exception.message | out-log;
         }
 
         if ( $test ) {
@@ -1290,7 +1324,7 @@ function popUP {
     }
     end {
         if ( -not ( $_canvas ) ) {
-            'FAIL::Dialog canvas not initialized, unable to proceed' | write-host;
+            'FAIL::Dialog canvas not initialized, unable to proceed' | out-log;
             return;
         }
         $_position = $_label.Location.y;
@@ -1323,18 +1357,23 @@ function popUP {
                     $_lbl.height    = $_val.height;
                 }
 
-                $_lbl.add_click( { copy-value } );
+                $_lbl.add_click( {
+                    copy-value;
+                } );
                 $_lbl.tag       = $_val.text;
                 [void]$_canvas.controls.add( $_lbl );
 
-                $_val.add_click( { copy-value; $this.selectAll(); } );
+                $_val.add_click( {
+                    copy-value;
+                    $this.selectAll();
+                } );
                 [void]$_canvas.controls.add( $_val );
 
                 $_hover.setToolTip( $_lbl, $_val.text );
 
                 $_position += $_val.height + [int]( $_value.height * 0.3 )
             } catch {
-                'FAIL::Unable to furnish dialog with label/value: [{0}]' -f $_.exception.message | write-host;
+                'FAIL::Unable to furnish dialog with label/value: [{0}]' -f $_.exception.message | out-log;
             }
         }
 
@@ -1352,7 +1391,7 @@ function popUP {
                 $_hover.setToolTip( $_tool, $_tool.tag );
                 $_canvas.clientSize = [System.Drawing.Size]::new( $_canvas.clientSize.width, [math]::max( $_canvas.clientSize.height, $_tool.location.y + $_tool.height + $_margin ) );
             } catch {
-                'FAIL::Unable to furnish dialog with tool [{0}]: [{1}]' -f $_tool.tag, $_.exception.message | write-host;
+                'FAIL::Unable to furnish dialog with tool [{0}]: [{1}]' -f $_tool.tag, $_.exception.message | out-log;
             }
         }
 
@@ -1361,14 +1400,63 @@ function popUP {
         #     $_canvas.Height = $height;
         # }
 
-        $_canvas.add_shown( { $_canvas.activate() } );
-        $_canvas.add_keyDown( { judge-keyStroke -key $_; } );
+        $_canvas.add_shown( {
+            $_canvas.activate()
+        } );
+        $_canvas.add_keyDown( {
+            judge-keyStroke -key $_;
+        } );
 
+        '  Showing full' | out-log;
         [void]$_canvas.showDialog();
 
     }
 }
+function show-minimal {
+    try {
+        $_domain                    = ?0 ( ( [System.Net.NetworkInformation.IPGlobalProperties]::getIPglobalProperties() ) | select-object -expand domainName ), '';
+        $_host                      = @(
+                                        [environment]::getEnvironmentVariable( 'computerName' )
+                                        ( '.' + $_domain ) -replace '\.$', ''
+                                    ) -join '';
 
+        $_canvas                    = [System.Windows.Forms.Form]@{
+            clientSize              = [System.Drawing.Size]::new( 200, 20 )
+            backColor               = $background
+            maximizeBox             = $false
+            minimizeBox             = $false
+            formBorderStyle         = [System.Windows.Forms.BorderStyle]::none
+            startPosition           = [System.Windows.Forms.FormStartPosition]::manual
+            opacity                 = $transparency
+            icon                    = [System.Drawing.Icon]::new( ( get-image -name "form" ) )
+        }
+        $_canvas.location           = [System.Drawing.Point]::new( [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.width - $_canvas.width, [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.height - $_canvas.height );
+
+        $_label                     = [System.Windows.Forms.Label]@{
+            size                    = $_canvas.clientSize
+            anchor                  = [System.Windows.Forms.AnchorStyles]::left -bor [System.Windows.Forms.AnchorStyles]::top -bor [System.Windows.Forms.AnchorStyles]::right -bor [System.Windows.Forms.AnchorStyles]::bottom;
+            text                    = $_host
+        }
+
+        $_label.add_click( {
+            copy-value;
+        } );
+        [void]$_canvas.controls.add( $_label );
+        $_canvas.add_shown( {
+            $_canvas.activate();
+        } );
+        $_canvas.add_formClosing( {
+            '  Closing minimalist' | out-log
+        } );
+
+        '  Showing minimalist' | out-log;
+        [void]$_canvas.showDialog();
+
+    } catch {
+        'FAIL::Unable to create main dialog canvas: [{0}]' -f $_.exception.message | out-log;
+        return;
+    }
+}
 
 # endregion routines
 
@@ -1390,12 +1478,20 @@ set-alias -force -option allScope -scope global -name '?0'                      
 # endregion aliases
 
 # region main
-"Start {0} v{1} ..." -f $me, $__.version | write-host;
+"Start {0} v{1} ..." -f $me, $__.version | out-log;
 [void]( hide-console );
-do {
-    $_refresh = $false;
-    [void]( popUP );
-} while( $_refresh );
-[void]( show-console );
-"End. {0}" -f $bye | write-host;
+if ( $minimalist ) {
+    [void]( show-minimal );
+} else {
+    do {
+        $_refresh = $false;
+        [void]( show-full );
+    } while( $_refresh );
+}
+"End. {0}" -f $bye | out-log;
+if ( $minimalist ) {
+    exit;
+} else {
+    [void]( show-console );
+}
 # endregion main
