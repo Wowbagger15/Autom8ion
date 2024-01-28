@@ -138,7 +138,7 @@ public static extern bool DeleteObject(IntPtr hObject);
 # region begin variables
 
 $__ = @{
-    version   = '1.0.1'
+    version   = '1.2.0'
     dialog = @{
         margin                     = 32
         position = @{
@@ -1129,7 +1129,8 @@ function show-full {
                 borderStyle             = "none"
                 font                    = $_label.font
                 foreColor               = [System.Drawing.Color]::black
-                backColor               = '#E5D9D5'
+            #   backColor               = '#E5D9D5'
+                backColor               = $background
                 autoSize                = $false
                 wordWrap                = $false
             };
