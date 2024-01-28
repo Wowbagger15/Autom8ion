@@ -1,0 +1,138 @@
+
+NAME
+    BIS - System information.exe
+    
+SYNOPSIS
+    Shows a dialog with system information significant to end-users seeking/consulting (remote) support
+    
+    
+SYNTAX
+    BIS - System information.exe [-me <String>] [-bye <String>] [-width <Int32>] [-height <Int32>] [-position <String>] [-transparency <Double>] [-background <String>] [-log <String>] [-test] [<CommonParameters>]
+    
+    BIS - System information.exe [-me <String>] [-transparency <Double>] [-background <String>] [-log <String>] [-minimalist] [-test] [<CommonParameters>]
+    
+    
+DESCRIPTION
+    This script shows upon start a dialog holding system information that can be used in a (remote) support
+    situation by service engineers and the like.
+    It also offers a set of tools that can be easily launched from the same window.
+    Values can be copied by clicking on them and the tool is easily closed via enter and escape keys
+    
+
+PARAMETERS
+    -me <String>
+        Specifies the caption title shown
+        
+        Required?                    false
+        Position?                    named
+        Default value                BIS - System information
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    -bye <String>
+        Specifies the closing message echoed in the controlling console window
+        
+        Required?                    false
+        Position?                    named
+        Default value                Ready. This window may be closed.
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    -width <Int32>
+        Specifies the width of the dialog in Windows native points, defaults to 512.
+        
+        Required?                    false
+        Position?                    named
+        Default value                512
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    -height <Int32>
+        Specifies the minimum height of the dialog in Windows native points, defaults to 256. Height is currently adjusted based on information lines and icons shown.
+        
+        Required?                    false
+        Position?                    named
+        Default value                256
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    -position <String>
+        Specifies the initial position of the dialog. Valid values (*not* case sensitive) are "leftTop", "rightTop", "leftBottom", "rightBottom", "center". Defaults to "center".
+        
+        Required?                    false
+        Position?                    named
+        Default value                center
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    -transparency <Double>
+        Specifies the transparency of the dialog. Defaults to 0.9, i.e. 90% opaque.
+        
+        Required?                    false
+        Position?                    named
+        Default value                0.9
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    -background <String>
+        Specifies the background color. Defaults to "#FFFFFF"
+        
+        Required?                    false
+        Position?                    named
+        Default value                #FFFFFF
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    -log <String>
+        
+        Required?                    false
+        Position?                    named
+        Default value                ( join-path -path ( [system.io.path]::getTempPath() ) -childPath ( ( $me, "log" ) -join '.' ) )
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    -minimalist [<SwitchParameter>]
+        
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    -test [<SwitchParameter>]
+        Does not perform the rather costly inventory but only shows dialog with tool icons.
+        
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
+    
+INPUTS
+    None. No pipeline support.
+    
+    
+OUTPUTS
+    None. Only visible GUI elements.
+    
+    
+NOTES
+    
+    
+        Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
+        GitHub: WowBagger15/Autom8ion
+        Release notes:
+            Version 1.2     : Introduced minimalist mode, added logging, renamed main canvas function
+            Version 1.0.1   : Fixed position calculation bug, erroneously using double pipe instead of -bor
+            Version 1.0     : First version cleaned up of comments and debug lines
+            Version 0.9     : Init
+    
+    -------------------------- EXAMPLE 1 --------------------------
+    
+    PS>"BIS - System information.exe" -me "Cromwell Inc. ICT services support tool" -bye "Tool closed. If this window remains open, it is safe to close." -position "rightBottom";
