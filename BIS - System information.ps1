@@ -47,6 +47,7 @@
     Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
     GitHub: WowBagger15/Autom8ion
     Release notes:
+        Version 1.2     : Introduced minimalist mode, added logging, renamed main canvas function
         Version 1.0.1   : Fixed position calculation bug, erroneously using double pipe instead of -bor
         Version 1.0     : First version cleaned up of comments and debug lines
         Version 0.9     : Init
@@ -58,7 +59,6 @@
 
 [cmdLetBinding( defaultParameterSetName = "normal" )]
 param(
-    [parameter( parameterSetName = "normal" )]
     [string]
     $me  = "BIS - System information"
     ,
@@ -138,7 +138,7 @@ public static extern bool DeleteObject(IntPtr hObject);
 # region begin variables
 
 $__ = @{
-    version   = '1.0.1'
+    version   = '1.2.0'
     dialog = @{
         margin                     = 32
         position = @{
@@ -572,7 +572,7 @@ function out-log {
     process {
         if ( $log ) {
             $_ = $_.insert( 0, [datetime]::now.toString( "yyyyMMdd::HHmmss::" ) );
-            $_ | write-host;
+        #   $_ | write-host;
             $_ | out-file -filePath $log -encoding "ascii" -append;
         }
     }
@@ -1129,7 +1129,8 @@ function show-full {
                 borderStyle             = "none"
                 font                    = $_label.font
                 foreColor               = [System.Drawing.Color]::black
-                backColor               = '#E5D9D5'
+            #   backColor               = '#E5D9D5'
+                backColor               = $background
                 autoSize                = $false
                 wordWrap                = $false
             };
