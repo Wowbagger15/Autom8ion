@@ -47,6 +47,7 @@
     Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
     GitHub: WowBagger15/Autom8ion
     Release notes:
+        Version 1.2     : Introduced minimalist mode, added logging, renamed main canvas function
         Version 1.0.1   : Fixed position calculation bug, erroneously using double pipe instead of -bor
         Version 1.0     : First version cleaned up of comments and debug lines
         Version 0.9     : Init
@@ -58,7 +59,6 @@
 
 [cmdLetBinding( defaultParameterSetName = "normal" )]
 param(
-    [parameter( parameterSetName = "normal" )]
     [string]
     $me  = "BIS - System information"
     ,
@@ -572,7 +572,7 @@ function out-log {
     process {
         if ( $log ) {
             $_ = $_.insert( 0, [datetime]::now.toString( "yyyyMMdd::HHmmss::" ) );
-            $_ | write-host;
+        #   $_ | write-host;
             $_ | out-file -filePath $log -encoding "ascii" -append;
         }
     }
