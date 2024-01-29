@@ -9,7 +9,7 @@ SYNOPSIS
 SYNTAX
     BIS - System information.exe [-me <String>] [-bye <String>] [-width <Int32>] [-height <Int32>] [-position <String>] [-transparency <Double>] [-background <String>] [-log <String>] [-test] [<CommonParameters>]
     
-    BIS - System information.exe [-me <String>] [-transparency <Double>] [-background <String>] [-log <String>] [-minimalist] [-test] [<CommonParameters>]
+    BIS - System information.exe [-me <String>] [-minimalist] [-transparency <Double>] [-background <String>] [-log <String>] [-test] [<CommonParameters>]
     
     
 DESCRIPTION
@@ -26,6 +26,15 @@ PARAMETERS
         Required?                    false
         Position?                    named
         Default value                BIS - System information
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    -minimalist [<SwitchParameter>]
+        Limits the dialog to showing the hostname in the righthand side corner (fixed right now)
+        
+        Required?                    false
+        Position?                    named
+        Default value                False
         Accept pipeline input?       false
         Accept wildcard characters?  false
         
@@ -91,14 +100,6 @@ PARAMETERS
         Accept pipeline input?       false
         Accept wildcard characters?  false
         
-    -minimalist [<SwitchParameter>]
-        
-        Required?                    false
-        Position?                    named
-        Default value                False
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-        
     -test [<SwitchParameter>]
         Does not perform the rather costly inventory but only shows dialog with tool icons.
         
@@ -128,6 +129,7 @@ NOTES
         Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
         GitHub: WowBagger15/Autom8ion
         Release notes:
+            Version 1.2.1   : Fixed starting size of minimalist canvas and centered text of the hostname
             Version 1.2     : Introduced minimalist mode, added logging, renamed main canvas function
             Version 1.0.1   : Fixed position calculation bug, erroneously using double pipe instead of -bor
             Version 1.0     : First version cleaned up of comments and debug lines
