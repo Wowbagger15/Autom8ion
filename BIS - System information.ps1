@@ -1438,7 +1438,7 @@ function show-minimal {
         }
         # https://stackoverflow.com/a/994189
         # WM_WINDOWPOSCHANGING blindly conforms the size of the form to the OS specified limits (apparently it does not query the window with WM_GETMINMAXINFO). Thus, I needed to intercept WM_WINDOWPOSCHANGING and override it with the size I really wanted.
-        $_canvas.location           = [System.Windows.Forms.FormStartPosition]::centerScreen;
+        $_canvas.location           = [System.Drawing.Point]::new( 0, 0 );
         $_canvas.size               = $_canvas.minimumSize;
         $_canvas.location           = [System.Drawing.Point]::new( [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.width - $_canvas.minimumSize.width, [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.height - $_canvas.minimumSize.height );
 
