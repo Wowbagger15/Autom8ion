@@ -13,6 +13,9 @@
     .PARAMETER me
     Specifies the caption title shown
 
+    .PARAMETER minimalist
+    Limits the dialog to showing the hostname in the righthand side corner (fixed right now)
+
     .PARAMETER bye
     Specifies the closing message echoed in the controlling console window
 
@@ -47,6 +50,7 @@
     Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
     GitHub: WowBagger15/Autom8ion
     Release notes:
+        Version 1.2.1   : Fixed starting size of minimalist canvas and centered text of the hostname
         Version 1.2     : Introduced minimalist mode, added logging, renamed main canvas function
         Version 1.0.1   : Fixed position calculation bug, erroneously using double pipe instead of -bor
         Version 1.0     : First version cleaned up of comments and debug lines
@@ -61,6 +65,10 @@
 param(
     [string]
     $me  = "BIS - System information"
+    ,
+    [parameter( parameterSetName = "minimalist" )]
+    [switch]
+    $minimalist
     ,
     [parameter( parameterSetName = "normal" )]
     [string]
@@ -100,10 +108,6 @@ param(
     [string]
     $log                           = ( join-path -path ( [system.io.path]::getTempPath() ) -childPath ( ( $me, "log" ) -join '.' ) )
     ,
-    [parameter( parameterSetName = "minimalist" )]
-    [switch]
-    $minimalist
-    ,
     [switch]
     $test
 )
@@ -138,7 +142,7 @@ public static extern bool DeleteObject(IntPtr hObject);
 # region begin variables
 
 $__ = @{
-    version   = '1.2.0'
+    version   = '1.2.1'
     dialog = @{
         margin                     = 32
         position = @{
@@ -1422,7 +1426,8 @@ function show-minimal {
                                     ) -join '';
 
         $_canvas                    = [System.Windows.Forms.Form]@{
-            clientSize              = [System.Drawing.Size]::new( 200, 20 )
+            minimumSize             = [System.Drawing.Size]::new( 200, 32 )
+            margin                  = 0
             backColor               = $background
             maximizeBox             = $false
             minimizeBox             = $false
@@ -1431,12 +1436,17 @@ function show-minimal {
             opacity                 = $transparency
             icon                    = [System.Drawing.Icon]::new( ( get-image -name "form" ) )
         }
-        $_canvas.location           = [System.Drawing.Point]::new( [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.width - $_canvas.width, [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.height - $_canvas.height );
+        # https://stackoverflow.com/a/994189
+        # WM_WINDOWPOSCHANGING blindly conforms the size of the form to the OS specified limits (apparently it does not query the window with WM_GETMINMAXINFO). Thus, I needed to intercept WM_WINDOWPOSCHANGING and override it with the size I really wanted.
+        $_canvas.location           = [System.Windows.Forms.FormStartPosition]::centerScreen;
+        $_canvas.size               = $_canvas.minimumSize;
+        $_canvas.location           = [System.Drawing.Point]::new( [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.width - $_canvas.minimumSize.width, [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.height - $_canvas.minimumSize.height );
 
         $_label                     = [System.Windows.Forms.Label]@{
             size                    = $_canvas.clientSize
             anchor                  = [System.Windows.Forms.AnchorStyles]::left -bor [System.Windows.Forms.AnchorStyles]::top -bor [System.Windows.Forms.AnchorStyles]::right -bor [System.Windows.Forms.AnchorStyles]::bottom;
             text                    = $_host
+            textAlign               = [System.Drawing.ContentAlignment]::middleCenter
         }
 
         $_label.add_click( {
