@@ -1,15 +1,13 @@
 
 NAME
-    BIS - System information.exe
+    Support-Workplace.exe
     
 SYNOPSIS
     Shows a dialog with system information significant to end-users seeking/consulting (remote) support
     
     
 SYNTAX
-    BIS - System information.exe [-me <String>] [-bye <String>] [-width <Int32>] [-height <Int32>] [-position <String>] [-transparency <Double>] [-background <String>] [-log <String>] [-test] [<CommonParameters>]
-    
-    BIS - System information.exe [-me <String>] [-minimalist] [-transparency <Double>] [-background <String>] [-log <String>] [-test] [<CommonParameters>]
+    Support-Workplace.exe [[-me] <String>] [-minimalist] [[-bye] <String>] [[-width] <Int32>] [[-height] <Int32>] [[-position] <String>] [[-transparency] <Double>] [[-background] <String>] [[-log] <String>] [-test] [<CommonParameters>]
     
     
 DESCRIPTION
@@ -24,8 +22,8 @@ PARAMETERS
         Specifies the caption title shown
         
         Required?                    false
-        Position?                    named
-        Default value                BIS - System information
+        Position?                    1
+        Default value                Support Workplace
         Accept pipeline input?       false
         Accept wildcard characters?  false
         
@@ -42,7 +40,7 @@ PARAMETERS
         Specifies the closing message echoed in the controlling console window
         
         Required?                    false
-        Position?                    named
+        Position?                    2
         Default value                Ready. This window may be closed.
         Accept pipeline input?       false
         Accept wildcard characters?  false
@@ -51,7 +49,7 @@ PARAMETERS
         Specifies the width of the dialog in Windows native points, defaults to 512.
         
         Required?                    false
-        Position?                    named
+        Position?                    3
         Default value                512
         Accept pipeline input?       false
         Accept wildcard characters?  false
@@ -60,7 +58,7 @@ PARAMETERS
         Specifies the minimum height of the dialog in Windows native points, defaults to 256. Height is currently adjusted based on information lines and icons shown.
         
         Required?                    false
-        Position?                    named
+        Position?                    4
         Default value                256
         Accept pipeline input?       false
         Accept wildcard characters?  false
@@ -69,7 +67,7 @@ PARAMETERS
         Specifies the initial position of the dialog. Valid values (*not* case sensitive) are "leftTop", "rightTop", "leftBottom", "rightBottom", "center". Defaults to "center".
         
         Required?                    false
-        Position?                    named
+        Position?                    5
         Default value                center
         Accept pipeline input?       false
         Accept wildcard characters?  false
@@ -78,7 +76,7 @@ PARAMETERS
         Specifies the transparency of the dialog. Defaults to 0.9, i.e. 90% opaque.
         
         Required?                    false
-        Position?                    named
+        Position?                    6
         Default value                0.9
         Accept pipeline input?       false
         Accept wildcard characters?  false
@@ -87,15 +85,16 @@ PARAMETERS
         Specifies the background color. Defaults to "#FFFFFF"
         
         Required?                    false
-        Position?                    named
+        Position?                    7
         Default value                #FFFFFF
         Accept pipeline input?       false
         Accept wildcard characters?  false
         
     -log <String>
+        TODO::Escape/replace unsupported characters in the $me string to be used as a filename
         
         Required?                    false
-        Position?                    named
+        Position?                    8
         Default value                ( join-path -path ( [system.io.path]::getTempPath() ) -childPath ( ( $me, "log" ) -join '.' ) )
         Accept pipeline input?       false
         Accept wildcard characters?  false
@@ -129,6 +128,8 @@ NOTES
         Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
         GitHub: WowBagger15/Autom8ion
         Release notes:
+            Version 1.3     : Chained minimalist and full dialogs and provided a button to invoke the full dialog
+                                Removed the parameter sets since they now are both completely identical
             Version 1.2.1   : Fixed starting size of minimalist canvas and centered text of the hostname
             Version 1.2     : Introduced minimalist mode, added logging, renamed main canvas function
             Version 1.0.1   : Fixed position calculation bug, erroneously using double pipe instead of -bor
@@ -137,4 +138,5 @@ NOTES
     
     -------------------------- EXAMPLE 1 --------------------------
     
-    PS>"BIS - System information.exe" -me "Cromwell Inc. ICT services support tool" -bye "Tool closed. If this window remains open, it is safe to close." -position "rightBottom";
+    PS>Support-Workplace.exe -minimalist -me "Cromwell Inc. ICT services support tool" -bye "Tool closed. If this window remains open, it is safe to close." -position "rightBottom" -background "#AAD3FF";
+    

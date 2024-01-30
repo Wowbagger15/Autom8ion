@@ -50,6 +50,8 @@
     Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
     GitHub: WowBagger15/Autom8ion
     Release notes:
+        Version 1.3     : Chained minimalist and full dialogs and provided a button to invoke the full dialog
+                            Removed the parameter sets since they now are both completely identical
         Version 1.2.1   : Fixed starting size of minimalist canvas and centered text of the hostname
         Version 1.2     : Introduced minimalist mode, added logging, renamed main canvas function
         Version 1.0.1   : Fixed position calculation bug, erroneously using double pipe instead of -bor
@@ -61,16 +63,14 @@
 
 # region interface
 
-[cmdLetBinding( defaultParameterSetName = "normal" )]
+[cmdLetBinding()]
 param(
     [string]
-    $me  = "BIS - System information"
+    $me  = "Support Workplace"
     ,
-    [parameter( parameterSetName = "minimalist" )]
     [switch]
     $minimalist
     ,
-    [parameter( parameterSetName = "normal" )]
     [string]
     $bye = "Ready. This window may be closed."
     ,
@@ -80,15 +80,12 @@ param(
     $size                          = [System.Drawing.Size]::new( 512, 256 )
     ,
 #>
-    [parameter( parameterSetName = "normal" )]
     [int]
     $width                         = 512
     ,
-    [parameter( parameterSetName = "normal" )]
     [int]
     $height                        = 256
     ,
-    [parameter( parameterSetName = "normal" )]
     [validateSet(
             "leftTop"
         ,   "rightTop"
@@ -106,6 +103,7 @@ param(
     $background                    = "#FFFFFF"
     ,
     [string]
+    #TODO::Escape/replace unsupported characters in the $me string to be used as a filename
     $log                           = ( join-path -path ( [system.io.path]::getTempPath() ) -childPath ( ( $me, "log" ) -join '.' ) )
     ,
     [switch]
@@ -769,14 +767,14 @@ function invoke-MSinfo {
         "  Done." | out-log;
     }
 }
-function get-certStore {
+function get-certificateStore {
     try {
         # get-command "certlm" -ea silentlyContinue | select-object -expand source;
         get-command "certmgr" -ea silentlyContinue | select-object -expand source;
     } catch {}
 }
 function invoke-certificateStore {
-    if ( $_ = get-certStore ) {
+    if ( $_ = get-certificateStore ) {
         "  Opening Certificate Store using [{0}] ..." -f ( $_ -join '] [' ) | out-log;
         start-process -filePath $_;
         "  Done." | out-log;
@@ -1070,6 +1068,12 @@ function get-image {
             }
         }
     }
+}
+function loop-full {
+    do {
+        $_refresh = $false;
+        [void]( show-full );
+    } while( $_refresh );
 }
 function show-full {
     begin {
@@ -1419,7 +1423,10 @@ function show-full {
 }
 function show-minimal {
     try {
-        $_domain                    = ?0 ( ( [System.Net.NetworkInformation.IPGlobalProperties]::getIPglobalProperties() ) | select-object -expand domainName ), '';
+        $_domain                    = ?0 @(
+                                        ( [System.Net.NetworkInformation.IPGlobalProperties]::getIPglobalProperties() ) | select-object -expand domainName
+                                        ''
+                                    );
         $_host                      = @(
                                         [environment]::getEnvironmentVariable( 'computerName' )
                                         ( '.' + $_domain ) -replace '\.$', ''
@@ -1440,19 +1447,45 @@ function show-minimal {
         # WM_WINDOWPOSCHANGING blindly conforms the size of the form to the OS specified limits (apparently it does not query the window with WM_GETMINMAXINFO). Thus, I needed to intercept WM_WINDOWPOSCHANGING and override it with the size I really wanted.
         $_canvas.location           = [System.Drawing.Point]::new( 0, 0 );
         $_canvas.size               = $_canvas.minimumSize;
-        $_canvas.location           = [System.Drawing.Point]::new( [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.width - $_canvas.minimumSize.width, [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.height - $_canvas.minimumSize.height );
+        $_canvas.location           = [System.Drawing.Point]::new(
+                                        [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.width - $_canvas.minimumSize.width,
+                                        [System.Windows.Forms.Screen]::primaryScreen.WorkingArea.height - $_canvas.minimumSize.height
+                                    );
 
         $_label                     = [System.Windows.Forms.Label]@{
             size                    = $_canvas.clientSize
-            anchor                  = [System.Windows.Forms.AnchorStyles]::left -bor [System.Windows.Forms.AnchorStyles]::top -bor [System.Windows.Forms.AnchorStyles]::right -bor [System.Windows.Forms.AnchorStyles]::bottom;
+            anchor                  =   [System.Windows.Forms.AnchorStyles]::left -bor
+                                        [System.Windows.Forms.AnchorStyles]::top -bor
+                                        [System.Windows.Forms.AnchorStyles]::bottom;
             text                    = $_host
             textAlign               = [System.Drawing.ContentAlignment]::middleCenter
         }
-
+        $_label.width              -= $_label.height;
+        $_label.left               += $_label.height;
         $_label.add_click( {
             copy-value;
         } );
+
+        $_expand                    = [System.Windows.Forms.Button]@{
+            size                    = [System.Drawing.Size]::new(
+                                        [int]( 0.8 * $_label.height ),
+                                        [int]( 0.8 * $_label.height )
+                                    )
+            text                    = "^"
+            textAlign               = [System.Drawing.ContentAlignment]::middleCenter
+            flatStyle               = [System.Windows.Forms.FlatStyle]::popUp
+        }
+        $_expand.location           = [System.Drawing.Point]::new(
+                                        [int]( $_label.height * 0.1 ),
+                                        [int]( $_label.height * 0.1 ) + $_label.position.y
+                                    );
+        $_expand.add_click( {
+            loop-full;
+        } );
+
         [void]$_canvas.controls.add( $_label );
+        [void]$_canvas.controls.add( $_expand );
+
         $_canvas.add_shown( {
             $_canvas.activate();
         } );
@@ -1468,12 +1501,9 @@ function show-minimal {
         return;
     }
 }
-
 # endregion routines
 
 # region init
-
-$_refresh = $false;
 
 # endregion init
 
@@ -1492,12 +1522,9 @@ set-alias -force -option allScope -scope global -name '?0'                      
 "Start {0} v{1} ..." -f $me, $__.version | out-log;
 [void]( hide-console );
 if ( $minimalist ) {
-    [void]( show-minimal );
+    show-minimal;
 } else {
-    do {
-        $_refresh = $false;
-        [void]( show-full );
-    } while( $_refresh );
+    loop-full;
 }
 "End. {0}" -f $bye | out-log;
 if ( $minimalist ) {
