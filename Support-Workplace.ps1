@@ -50,8 +50,10 @@
     Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
     GitHub: WowBagger15/Autom8ion
     Release notes:
+        Version 1.3.1   : Fixed function name mismatch
         Version 1.3     : Chained minimalist and full dialogs and provided a button to invoke the full dialog
                             Removed the parameter sets since they now are both completely identical
+                            Renamed main tool from 'BIS - System information' to 'Support-Workplace'
         Version 1.2.1   : Fixed starting size of minimalist canvas and centered text of the hostname
         Version 1.2     : Introduced minimalist mode, added logging, renamed main canvas function
         Version 1.0.1   : Fixed position calculation bug, erroneously using double pipe instead of -bor
@@ -140,7 +142,7 @@ public static extern bool DeleteObject(IntPtr hObject);
 # region begin variables
 
 $__ = @{
-    version   = '1.2.1'
+    version   = '1.3.1'
     dialog = @{
         margin                     = 32
         position = @{
@@ -1035,7 +1037,7 @@ function get-image {
             $_sources.assist = ( [xml]( get-content -literalPath ( join-path $_.installLocation "AppXmanifest.xml" ) ) ).package.applications.application.executable;
             $_sources.assist = get-item -literalPath ( join-path $_.installLocation $_sources.assist );
         }
-        if ( $_ = get-certStore ) {
+        if ( $_ = get-certificateStore ) {
             $_sources.certStore = get-item -literalPath $_;
         }
         $_sources.enrollment = @(
