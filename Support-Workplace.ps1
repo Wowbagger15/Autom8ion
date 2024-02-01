@@ -638,7 +638,11 @@ function get-systemInformation {
                     $_cli     = ' | PowerCLI {0}' -f ( $_cli.major, $_cli.minor, $_cli.revision, $_cli.build -join '.' );
                 }
             } catch {}
-            $_domain          = ?0 ( ( [System.Net.NetworkInformation.IPGlobalProperties]::getIPglobalProperties() ) | select-object -expand domainName ), '';
+            $_domain          = ?0 @(
+                [System.Net.NetworkInformation.IPGlobalProperties]::getIPglobalProperties() | select-object -expand domainName
+                [System.Environment]::getEnvironmentVariable( "userDNSdomain" )
+                ''
+            );
             $_interface       = @();
             $_connection      = @();
             get-netIPconfiguration -detailed |? {
