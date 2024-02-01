@@ -50,6 +50,7 @@
     Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
     GitHub: WowBagger15/Autom8ion
     Release notes:
+        Version 1.3.2   : Added host domain alternative sources in favor of userDNSdomain
         Version 1.3.1   : Fixed function name mismatch
         Version 1.3     : Chained minimalist and full dialogs and provided a button to invoke the full dialog
                             Removed the parameter sets since they now are both completely identical
@@ -142,7 +143,7 @@ public static extern bool DeleteObject(IntPtr hObject);
 # region begin variables
 
 $__ = @{
-    version   = '1.3.1'
+    version   = '1.3.2'
     dialog = @{
         margin                     = 32
         position = @{
@@ -639,7 +640,8 @@ function get-systemInformation {
                 }
             } catch {}
             $_domain          = ?0 @(
-                [System.Net.NetworkInformation.IPGlobalProperties]::getIPglobalProperties() | select-object -expand domainName
+                ( [System.Net.NetworkInformation.IPGlobalProperties]::getIPglobalProperties() ).domainName
+                ?: { $_system.partOfDomain } { $_system.domain } { $null }
                 [System.Environment]::getEnvironmentVariable( "userDNSdomain" )
                 ''
             );
