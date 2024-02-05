@@ -50,6 +50,7 @@
     Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
     GitHub: WowBagger15/Autom8ion
     Release notes:
+        Version 1.3.3   : Added close button and icon for expand button
         Version 1.3.2   : Added host domain alternative sources in favor of userDNSdomain
         Version 1.3.1   : Fixed function name mismatch
         Version 1.3     : Chained minimalist and full dialogs and provided a button to invoke the full dialog
@@ -143,7 +144,7 @@ public static extern bool DeleteObject(IntPtr hObject);
 # region begin variables
 
 $__ = @{
-    version   = '1.3.2'
+    version   = '1.3.3'
     dialog = @{
         margin                     = 32
         position = @{
@@ -931,7 +932,9 @@ function clone-element {
             }
         }
         return $_clone;
-    } catch {}
+    } catch {
+        $_clone.dispose();
+    }
 }
 function judge-keyStroke {
     param(
@@ -964,6 +967,8 @@ function get-indexedIcon {
         [switch]
         $small
     )
+    # TODO::Implement extracting icon groups instead of indexed icon, probably based in relative size?
+    #       https://stackoverflow.com/a/33845296
     try {
         $_large, $_small = 0, 0;
         #Call Win32 API Function for handles
@@ -984,7 +989,7 @@ function get-indexedIcon {
 }
 function get-image {
     param(
-        [validateSet( "form", "portable", "fixed", "assist", "certStore", "intune", "enrollment" )]
+        [validateSet( "form", "expand", "close", "portable", "fixed", "assist", "certStore", "intune", "enrollment" )]
         $name
     )
     begin {
@@ -1050,6 +1055,12 @@ function get-image {
             get-item -literalPath ( join-path ( [environment]::getEnvironmentVariable( "SystemRoot" ) ) "System32\imageres.dll" )
             # index number in the dll resource section
             213
+        )
+        $_sources.expand = $_sources.form;
+        $_sources.close = @(
+            get-item -literalPath ( join-path ( [environment]::getEnvironmentVariable( "SystemRoot" ) ) "System32\imageres.dll" )
+            # index number in the dll resource section
+            236
         )
     }
     end {
@@ -1441,7 +1452,7 @@ function show-minimal {
                                     ) -join '';
 
         $_canvas                    = [System.Windows.Forms.Form]@{
-            minimumSize             = [System.Drawing.Size]::new( 200, 32 )
+            minimumSize             = [System.Drawing.Size]::new( 200, 24 )
             margin                  = 0
             backColor               = $background
             maximizeBox             = $false
@@ -1462,37 +1473,54 @@ function show-minimal {
 
         $_label                     = [System.Windows.Forms.Label]@{
             size                    = $_canvas.clientSize
-            anchor                  =   [System.Windows.Forms.AnchorStyles]::left -bor
-                                        [System.Windows.Forms.AnchorStyles]::top -bor
+            anchor                  =   [System.Windows.Forms.AnchorStyles]::top -bor
                                         [System.Windows.Forms.AnchorStyles]::bottom;
             text                    = $_host
             textAlign               = [System.Drawing.ContentAlignment]::middleCenter
         }
-        $_label.width              -= $_label.height;
+        $_label.width              -= $_label.height * 2;
         $_label.left               += $_label.height;
         $_label.add_click( {
             copy-value;
         } );
+        $_margin                    = [int]( 0.1 * $_label.height );
+        $_square                    = $_label.height - $_margin - $_margin;
 
         $_expand                    = [System.Windows.Forms.Button]@{
             size                    = [System.Drawing.Size]::new(
-                                        [int]( 0.8 * $_label.height ),
-                                        [int]( 0.8 * $_label.height )
-                                    )
-            text                    = "^"
-            textAlign               = [System.Drawing.ContentAlignment]::middleCenter
-            flatStyle               = [System.Windows.Forms.FlatStyle]::popUp
-        }
-        $_expand.location           = [System.Drawing.Point]::new(
-                                        [int]( $_label.height * 0.1 ),
-                                        [int]( $_label.height * 0.1 ) + $_label.position.y
+                                        $_square,
+                                        $_square
+                                        )
+            location                = [System.Drawing.Point]::new(
+                                        $_margin,
+                                        $_margin
                                     );
+            image                   = [System.Drawing.Image]::fromStream( ( get-image -name "expand" ) );
+            imageAlign              = [System.Drawing.ContentAlignment]::middleCenter
+            flatStyle               = [System.Windows.Forms.FlatStyle]::flat
+            cursor                  = [System.Windows.Forms.Cursors]::hand
+        }
+        $_expand.flatAppearance.borderSize = 0;
+        $_expand.flatAppearance.mouseOverBackColor = [System.Drawing.Color]::gray;
         $_expand.add_click( {
             loop-full;
         } );
 
+        $_close                     = clone-element -object $_expand -properties 'size','cursor','imageAlign','flatStyle';
+        $_close.flatAppearance.borderSize = 0;
+        $_close.flatAppearance.mouseOverBackColor = [System.Drawing.Color]::gray;
+        $_close.location            = [System.Drawing.Point]::new(
+                                        $_canvas.width - $_margin - $_close.width,
+                                        $_margin
+                                    );
+        $_close.image               = ( get-image -name "close" | get-indexedIcon ).toBitmap();
+        $_close.add_click( {
+            $this.parent.close();
+        } );
+
         [void]$_canvas.controls.add( $_label );
         [void]$_canvas.controls.add( $_expand );
+        [void]$_canvas.controls.add( $_close );
 
         $_canvas.add_shown( {
             $_canvas.activate();
@@ -1528,6 +1556,7 @@ set-alias -force -option allScope -scope global -name '?0'                      
 
 # region main
 "Start {0} v{1} ..." -f $me, $__.version | out-log;
+
 [void]( hide-console );
 if ( $minimalist ) {
     show-minimal;

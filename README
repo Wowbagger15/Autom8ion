@@ -128,6 +128,7 @@ NOTES
         Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
         GitHub: WowBagger15/Autom8ion
         Release notes:
+            Version 1.3.3   : Added close button
             Version 1.3.2   : Added host domain alternative sources in favor of userDNSdomain
             Version 1.3.1   : Fixed function name mismatch
             Version 1.3     : Chained minimalist and full dialogs and provided a button to invoke the full dialog
