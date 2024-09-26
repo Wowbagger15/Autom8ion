@@ -50,6 +50,7 @@
     Author: R.J. de Vries (Autom8ion@3Bdesign.nl)
     GitHub: WowBagger15/Autom8ion
     Release notes:
+        Version 1.3.4   : Added always-on-top mode, added 'custom' to gauge bar style parameter
         Version 1.3.3   : Added close button and icon for expand button
         Version 1.3.2   : Added host domain alternative sources in favor of userDNSdomain
         Version 1.3.1   : Fixed function name mismatch
@@ -130,6 +131,17 @@ public static extern IntPtr GetConsoleWindow();
 public static extern bool ShowWindow(IntPtr hWnd, Int32 nCmdShow);
 '@;
 
+# https://github.com/bkfarnsworth/Always-On-Top-PS-Script/blob/master/Always_On_Top.ps1
+add-type -name "Window" -namespace "Windows" -memberDefinition @'
+[DllImport("user32.dll")]
+public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cX, int cY, uint uFlags);
+static readonly IntPtr HWND_TOPMOST   = new IntPtr(-1);
+static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+const           UInt32 SWP_NOSIZE     = 0x0001;
+const           UInt32 SWP_NOMOVE     = 0x0002;
+const           UInt32 TOPMOST_FLAGS  = SWP_NOMOVE | SWP_NOSIZE;
+'@;
+
 # https://www.powershellgallery.com/packages/IconForGUI/1.5.2/Content/IconForGUI.psm1
 add-type -name "Icon" -namespace "Win32API" -memberDefinition @'
 [DllImport("Shell32.dll", SetLastError=true)]
@@ -144,7 +156,10 @@ public static extern bool DeleteObject(IntPtr hObject);
 # region begin variables
 
 $__ = @{
-    version   = '1.3.3'
+    path    = split-path -parent -path $myInvocation.myCommand.definition
+    name    = ( get-item $myInvocation.myCommand.definition ).baseName
+    pid     = ( [System.Diagnostics.Process]::getCurrentProcess() ).id
+    version = '1.3.4'
     dialog = @{
         margin                     = 32
         position = @{
@@ -485,14 +500,18 @@ function out-gauge {
         $width = 20
         ,
         [parameter( position = 4 )]
-        [validateSet(
-                "EqualThin"
-            ,   "EqualThick1"
-            ,   "EqualThick2"
-            ,   "GrowingThin1"
-            ,   "GrowingThin2"
-            ,   "GrowingThick"
-        )]
+      # [validateSet(
+      #         "EqualThin"
+      #     ,   "EqualThick1"
+      #     ,   "EqualThick2"
+      #     ,   "GrowingThin1"
+      #     ,   "GrowingThin2"
+      #     ,   "GrowingThick"
+      # )]
+        [validateScript( {
+            $_ -eq "custom" -or
+            $_ -in $__.gauge.bar.style.keys
+        })]
         [string]
         $style = "EqualThin"
         ,
@@ -763,6 +782,12 @@ function show-console {
 function hide-console {
     $consolePtr = [Console.Window]::GetConsoleWindow();
     [Console.Window]::showWindow( $consolePtr, 0 );
+}
+function usurp {
+    [Windows.Window]::setWindowPos( $__.pid, [Windows.Window]::HWND_TOPMOST, 0, 0, 0, 0, [Windows.Window]::TOPMOST_FLAGS );
+}
+function abdicate {
+    [Windows.Window]::setWindowPos( $__.pid, [Windows.Window]::HWND_NOTOPMOST, 0, 0, 0, 0, [Windows.Window]::TOPMOST_FLAGS );
 }
 function get-MSinfo {
     try {
